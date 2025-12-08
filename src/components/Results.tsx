@@ -33,7 +33,7 @@ function Results({ events, onReset, city }: ResultsProps) {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <img
-              src="/comedyclub_logo.png"
+              src="/comedyclub_logo2.png"
               alt="Comedy Scrapper 2028"
               className="w-16 h-16 object-contain"
             />

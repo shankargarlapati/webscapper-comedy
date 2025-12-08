@@ -95,7 +95,7 @@ function Landing({ onFindComedy }: LandingProps) {
       <div className="text-center max-w-md w-full">
         <div className="mb-8">
           <img
-            src="/comedyclub_logo.png"
+            src="/comedyclub_logo2.png"
             alt="Comedy Scrapper 2028"
             className="w-32 h-32 mx-auto mb-4 object-contain"
           />
