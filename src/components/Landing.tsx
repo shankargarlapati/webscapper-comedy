@@ -42,7 +42,7 @@ function Landing({ onFindComedy }: LandingProps) {
       <div className="text-center max-w-md w-full">
         <div className="mb-8">
           <Laugh className="w-16 h-16 mx-auto mb-4 text-yellow-400" />
-          <h1 className="text-4xl font-bold mb-3">Singularity</h1>
+          <h1 className="text-4xl font-bold mb-3">Comedy Scrapper 2028</h1>
           <p className="text-gray-400 text-lg">
             Discover the best comedy happening tonight in Los Angeles
           </p>
