@@ -67,7 +67,7 @@ The `find-comedy` Edge Function is already deployed and handles:
 - **Frontend**: React + TypeScript + Tailwind CSS + Vite
 - **Backend**: Supabase Edge Functions (Deno)
 - **Database**: Supabase (PostgreSQL)
-- **APIs**: Google Places API, OpenAI API
+- **APIs**: Google Places API, OpenAI API, Firecrawl API
 - **Icons**: Lucide React
 
 ## Architecture
@@ -77,15 +77,20 @@ User → Landing Page → Geolocation/Zip
                 ↓
         Edge Function (find-comedy)
                 ↓
-    Check Cache → [Hit] → Return Cached
-                ↓ [Miss]
-        Google Places API
+        Google Places API (Find Venues)
+                ↓
+        For Each Venue:
+          ├─ Store in Supabase
+          └─ Firecrawl (Scrape Website)
+                ↓
+        Extract Events & Details
                 ↓
         OpenAI Classification
+        (Comedy Category + Reasoning)
                 ↓
-        Rank & Select Top Picks
+        Rank & Select Best Per Category
                 ↓
-        Save to Cache → Return Results
+        Return Results
 ```
 
 ## Local Development

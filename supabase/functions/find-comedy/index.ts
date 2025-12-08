@@ -7,16 +7,29 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+interface ScrapedEvent {
+  title: string;
+  description: string;
+  startTime?: string;
+  price?: string;
+  performers?: string;
+  url?: string;
+}
+
 interface ComedyEvent {
   category: string;
   venueName: string;
   eventTitle: string;
+  description?: string;
   distance: number;
   aiReasoning: string;
   placeId?: string;
   address?: string;
   rating?: number;
   userRatingsTotal?: number;
+  price?: string;
+  performers?: string;
+  eventUrl?: string;
   latitude?: number;
   longitude?: number;
 }
@@ -37,56 +50,6 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
-}
-
-function createLocationHash(lat: number, lng: number): string {
-  return `${lat.toFixed(3)}_${lng.toFixed(3)}`;
-}
-
-async function checkCache(supabase: any, locationHash: string): Promise<ComedyEvent[] | null> {
-  const { data, error } = await supabase
-    .from("comedy_events_cache")
-    .select("*")
-    .eq("location_hash", locationHash)
-    .gt("expires_at", new Date().toISOString());
-
-  if (error || !data || data.length === 0) {
-    return null;
-  }
-
-  const events: ComedyEvent[] = data.map((row: any) => ({
-    category: row.category,
-    venueName: row.venue_name,
-    eventTitle: row.event_title,
-    distance: parseFloat(row.distance_miles),
-    aiReasoning: row.ai_reasoning,
-    placeId: row.place_id,
-    address: row.address,
-    rating: row.rating ? parseFloat(row.rating) : undefined,
-    userRatingsTotal: row.user_ratings_total,
-  }));
-
-  return events.length === CATEGORIES.length ? events : null;
-}
-
-async function saveToCache(supabase: any, locationHash: string, events: ComedyEvent[]) {
-  const rows = events.map((event) => ({
-    location_hash: locationHash,
-    category: event.category,
-    venue_name: event.venueName,
-    event_title: event.eventTitle,
-    description: "",
-    distance_miles: event.distance,
-    rating: event.rating || 0,
-    user_ratings_total: event.userRatingsTotal || 0,
-    address: event.address || "",
-    place_id: event.placeId || "",
-    latitude: event.latitude,
-    longitude: event.longitude,
-    ai_reasoning: event.aiReasoning,
-  }));
-
-  await supabase.from("comedy_events_cache").insert(rows);
 }
 
 async function queryGooglePlaces(apiKey: string, lat: number, lng: number): Promise<any[]> {
@@ -113,20 +76,123 @@ async function queryGooglePlaces(apiKey: string, lat: number, lng: number): Prom
   return allPlaces;
 }
 
-async function classifyWithAI(openaiKey: string, places: any[], userLat: number, userLng: number): Promise<ComedyEvent[]> {
-  const placesInfo = places.map((p) => ({
-    name: p.name,
-    types: p.types,
-    vicinity: p.vicinity,
-    rating: p.rating,
-    user_ratings_total: p.user_ratings_total,
-    place_id: p.place_id,
-    lat: p.geometry.location.lat,
-    lng: p.geometry.location.lng,
-    distance: calculateDistance(userLat, userLng, p.geometry.location.lat, p.geometry.location.lng),
+async function scrapeVenueWithFirecrawl(
+  firecrawlKey: string,
+  url: string,
+  venueName: string
+): Promise<ScrapedEvent[]> {
+  try {
+    const response = await fetch("https://api.firecrawl.dev/v0/scrape", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${firecrawlKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url: url,
+        formats: ["markdown"],
+        timeout: 30000,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`Firecrawl scrape failed for ${url}: ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+    const content = data.markdown || data.content || "";
+
+    const events = extractEventsFromContent(content, venueName);
+    return events;
+  } catch (error) {
+    console.error(`Error scraping ${url}:`, error);
+    return [];
+  }
+}
+
+function extractEventsFromContent(content: string, venueName: string): ScrapedEvent[] {
+  const events: ScrapedEvent[] = [];
+
+  const lines = content.split("\n");
+  let currentEvent: Partial<ScrapedEvent> | null = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (
+      trimmed.match(/^#{1,3}\s+/i) ||
+      trimmed.match(/^\*{2,}/i) ||
+      trimmed.match(/show|event|performance|tonight/i)
+    ) {
+      if (currentEvent && currentEvent.title) {
+        events.push({
+          title: currentEvent.title || "Comedy Show",
+          description: currentEvent.description || "",
+          startTime: currentEvent.startTime,
+          price: currentEvent.price,
+          performers: currentEvent.performers,
+          url: currentEvent.url,
+        });
+      }
+
+      currentEvent = {
+        title: trimmed.replace(/^[#*]+\s*/g, ""),
+        description: "",
+      };
+    } else if (currentEvent) {
+      const priceMatch = trimmed.match(/\$(\d+[.,]?\d*)|free|complimentary/i);
+      if (priceMatch) {
+        currentEvent.price = priceMatch[0];
+      }
+
+      const timeMatch = trimmed.match(
+        /(\d{1,2})[:\.]?(\d{2})?\s*(am|pm)?\s*-?\s*(\d{1,2})?[:\.]?(\d{2})?\s*(am|pm)?/i
+      );
+      if (timeMatch && !currentEvent.startTime) {
+        currentEvent.startTime = trimmed;
+      }
+
+      if (currentEvent.description && currentEvent.description.length < 200) {
+        currentEvent.description += (currentEvent.description ? " " : "") + trimmed;
+      }
+    }
+  }
+
+  if (currentEvent && currentEvent.title) {
+    events.push({
+      title: currentEvent.title || "Comedy Show",
+      description: currentEvent.description || "",
+      startTime: currentEvent.startTime,
+      price: currentEvent.price,
+      performers: currentEvent.performers,
+      url: currentEvent.url,
+    });
+  }
+
+  return events.length > 0 ? events : [{
+    title: "Live Comedy Events",
+    description: `Check ${venueName} for tonight's shows`,
+  }];
+}
+
+async function classifyEventsWithAI(
+  openaiKey: string,
+  events: any[],
+  userLat: number,
+  userLng: number
+): Promise<ComedyEvent[]> {
+  const eventsInfo = events.map((e) => ({
+    venueName: e.venueName,
+    eventTitle: e.eventTitle,
+    description: e.description || "",
+    rating: e.rating,
+    proximity: e.distance,
+    venueName_and_event: `${e.venueName} - ${e.eventTitle}`,
   }));
 
-  const prompt = `You are a comedy expert. Analyze these venues and classify each into EXACTLY ONE category:
+  const prompt = `You are a comedy expert. Classify these venues/events into ONE category each:
 
 Categories:
 1. Comedy Workshop - classes, open mics, development workshops
@@ -134,71 +200,99 @@ Categories:
 3. Stand-Up Comedy Club - pro showcases, headliners, traditional stand-up
 4. Improv Comedy Leaders - improv troupes, improv houses, sketch shows
 
-Venues:
-${JSON.stringify(placesInfo, null, 2)}
+Venues/Events:
+${JSON.stringify(eventsInfo, null, 2)}
 
-For EACH of the 4 categories, select the single BEST venue based on:
-- Relevance to category
-- Rating and reviews
-- Quality implied by name/description
-- Proximity to user (lower distance is better)
+For EACH venue, pick the BEST single category and provide a brief, compelling one-sentence reason why.
 
 Respond with ONLY valid JSON in this exact format:
 {
-  "Comedy Workshop": {"place_id": "...", "reasoning": "one sentence why it's best"},
-  "Comedy Podcasts": {"place_id": "...", "reasoning": "one sentence why it's best"},
-  "Stand-Up Comedy Club": {"place_id": "...", "reasoning": "one sentence why it's best"},
-  "Improv Comedy Leaders": {"place_id": "...", "reasoning": "one sentence why it's best"}
+  "classifications": [
+    {"venueName_and_event": "...", "category": "...", "reasoning": "one sentence why"},
+    {"venueName_and_event": "...", "category": "...", "reasoning": "one sentence why"}
+  ]
 }
 
-If no good match exists for a category, use null for that category. Do not include any text outside the JSON.`;
+Do not include any text outside the JSON.`;
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${openaiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a comedy venue classification expert. Always respond with valid JSON only." },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.3,
-    }),
-  });
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openaiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are a comedy venue classification expert. Always respond with valid JSON only." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.3,
+      }),
+    });
 
-  const aiData = await response.json();
-  const content = aiData.choices[0].message.content.trim();
-  const classifications = JSON.parse(content);
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
 
-  const events: ComedyEvent[] = [];
-  const placeMap = new Map(places.map((p) => [p.place_id, p]));
+    const aiData = await response.json();
+    if (!aiData.choices || !aiData.choices[0]) {
+      throw new Error("Invalid OpenAI response");
+    }
 
-  for (const category of CATEGORIES) {
-    const classification = classifications[category];
-    if (classification && classification.place_id) {
-      const place = placeMap.get(classification.place_id);
-      if (place) {
-        events.push({
-          category,
-          venueName: place.name,
-          eventTitle: "",
-          distance: calculateDistance(userLat, userLng, place.geometry.location.lat, place.geometry.location.lng),
+    const content = aiData.choices[0].message.content.trim();
+    const parsed = JSON.parse(content);
+    const classifications = parsed.classifications || [];
+
+    const categorizedEvents: ComedyEvent[] = [];
+
+    for (const classification of classifications) {
+      const originalEvent = events.find(
+        (e) => `${e.venueName} - ${e.eventTitle}` === classification.venueName_and_event
+      );
+
+      if (originalEvent && CATEGORIES.includes(classification.category)) {
+        categorizedEvents.push({
+          ...originalEvent,
+          category: classification.category,
           aiReasoning: classification.reasoning,
-          placeId: place.place_id,
-          address: place.vicinity,
-          rating: place.rating,
-          userRatingsTotal: place.user_ratings_total,
-          latitude: place.geometry.location.lat,
-          longitude: place.geometry.location.lng,
         });
       }
     }
+
+    return categorizedEvents;
+  } catch (error) {
+    console.error("AI classification error:", error);
+    return [];
+  }
+}
+
+async function selectBestPerCategory(events: ComedyEvent[]): Promise<ComedyEvent[]> {
+  const categorized: Record<string, ComedyEvent[]> = {};
+
+  for (const event of events) {
+    if (!categorized[event.category]) {
+      categorized[event.category] = [];
+    }
+    categorized[event.category].push(event);
   }
 
-  return events;
+  const results: ComedyEvent[] = [];
+
+  for (const category of CATEGORIES) {
+    const categoryEvents = categorized[category] || [];
+    if (categoryEvents.length > 0) {
+      const best = categoryEvents.reduce((prev, current) => {
+        const prevScore = (prev.rating || 0) - (prev.distance * 0.1);
+        const currentScore = (current.rating || 0) - (current.distance * 0.1);
+        return currentScore > prevScore ? current : prev;
+      });
+      results.push(best);
+    }
+  }
+
+  return results;
 }
 
 Deno.serve(async (req: Request) => {
@@ -226,10 +320,13 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const googleApiKey = Deno.env.get("GOOGLE_PLACES_API_KEY");
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
 
     if (!googleApiKey || !openaiKey) {
       return new Response(
-        JSON.stringify({ error: "API keys not configured. Please set GOOGLE_PLACES_API_KEY and OPENAI_API_KEY." }),
+        JSON.stringify({
+          error: "API keys not configured. Please set GOOGLE_PLACES_API_KEY, OPENAI_API_KEY, and FIRECRAWL_API_KEY.",
+        }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -238,18 +335,6 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const locationHash = createLocationHash(latitude, longitude);
-
-    const cachedEvents = await checkCache(supabase, locationHash);
-    if (cachedEvents) {
-      return new Response(
-        JSON.stringify({ events: cachedEvents, cached: true }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
 
     const places = await queryGooglePlaces(googleApiKey, latitude, longitude);
 
@@ -263,11 +348,100 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const events = await classifyWithAI(openaiKey, places, latitude, longitude);
-    await saveToCache(supabase, locationHash, events);
+    const allEvents: any[] = [];
+
+    for (const place of places.slice(0, 10)) {
+      const distance = calculateDistance(latitude, longitude, place.geometry.location.lat, place.geometry.location.lng);
+
+      if (distance > 10) continue;
+
+      const venueRow = {
+        place_id: place.place_id,
+        name: place.name,
+        address: place.vicinity,
+        latitude: place.geometry.location.lat,
+        longitude: place.geometry.location.lng,
+        website: place.website || "",
+        rating: place.rating || 0,
+        user_ratings_total: place.user_ratings_total || 0,
+        phone: place.formatted_phone_number || "",
+        types: place.types || [],
+      };
+
+      await supabase.from("comedy_venues").upsert([venueRow], { onConflict: "place_id" });
+
+      let scrapedEvents: ScrapedEvent[] = [];
+
+      if (firecrawlKey && place.website) {
+        scrapedEvents = await scrapeVenueWithFirecrawl(
+          firecrawlKey,
+          place.website,
+          place.name
+        );
+      }
+
+      if (scrapedEvents.length === 0) {
+        scrapedEvents = [{
+          title: "Live Comedy Events",
+          description: `Check ${place.name} for tonight's shows`,
+        }];
+      }
+
+      for (const scrapedEvent of scrapedEvents.slice(0, 2)) {
+        const eventRow = {
+          title: scrapedEvent.title,
+          description: scrapedEvent.description || "",
+          start_time: scrapedEvent.startTime,
+          price: scrapedEvent.price,
+          performers: scrapedEvent.performers,
+          url: scrapedEvent.url,
+          source_url: place.website,
+        };
+
+        allEvents.push({
+          venueName: place.name,
+          eventTitle: scrapedEvent.title,
+          description: scrapedEvent.description || "",
+          placeId: place.place_id,
+          address: place.vicinity,
+          distance: distance,
+          rating: place.rating,
+          userRatingsTotal: place.user_ratings_total,
+          price: scrapedEvent.price,
+          performers: scrapedEvent.performers,
+          eventUrl: scrapedEvent.url,
+          latitude: place.geometry.location.lat,
+          longitude: place.geometry.location.lng,
+        });
+      }
+    }
+
+    if (allEvents.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "No events found or couldn't scrape venue data" }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const classifiedEvents = await classifyEventsWithAI(openaiKey, allEvents, latitude, longitude);
+
+    if (classifiedEvents.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Could not classify events" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const finalResults = await selectBestPerCategory(classifiedEvents);
 
     return new Response(
-      JSON.stringify({ events, cached: false }),
+      JSON.stringify({ events: finalResults, cached: false }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -276,7 +450,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error("Error:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Internal server error" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

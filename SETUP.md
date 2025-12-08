@@ -2,10 +2,11 @@
 
 ## What You Need
 
-To run Singular, you'll need two API keys:
+To run Singular, you'll need three API keys:
 
 1. **Google Places API Key** - For finding comedy venues
 2. **OpenAI API Key** - For AI classification
+3. **Firecrawl API Key** - For scraping venue websites
 
 ## Step 1: Get Google Places API Key
 
@@ -33,15 +34,24 @@ To run Singular, you'll need two API keys:
 5. Copy your API key (you won't be able to see it again)
 6. Add credits to your account if needed
 
-## Step 3: Configure Supabase Secrets
+## Step 3: Get Firecrawl API Key
+
+1. Visit [Firecrawl](https://www.firecrawl.dev/)
+2. Sign up for an account
+3. Go to your dashboard and find API Keys
+4. Copy your API key
+5. Note: Firecrawl offers free tier requests for scraping
+
+## Step 4: Configure Supabase Secrets
 
 The Edge Function needs these API keys configured as secrets in your Supabase project.
 
 You'll need to add these as environment variables:
 - `GOOGLE_PLACES_API_KEY`
 - `OPENAI_API_KEY`
+- `FIRECRAWL_API_KEY`
 
-## Step 4: Test the App
+## Step 5: Test the App
 
 Once configured, test by:
 1. Click "Find Comedy Tonight"
@@ -53,9 +63,10 @@ Once configured, test by:
 
 - **Google Places API**: ~$0.032 per request (includes nearby search)
 - **OpenAI API**: ~$0.001-0.002 per classification (using GPT-4o-mini)
-- **Caching**: Results are cached for 10 minutes to minimize costs
+- **Firecrawl**: Free tier includes requests (paid plans start at $99/month)
+- **Supabase**: Database storage minimal for cached data
 
-With caching, typical cost per unique user search: **$0.03-0.04**
+With Firecrawl free tier, typical cost per unique user search: **$0.033-0.034**
 
 ## Troubleshooting
 
