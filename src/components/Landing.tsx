@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface LandingProps {
   onFindComedy: (latitude: number, longitude: number, city?: string) => void;
@@ -9,6 +10,7 @@ function Landing({ onFindComedy }: LandingProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [city, setCity] = useState('');
+  const { theme } = useTheme();
 
   const handleGeolocation = () => {
     setIsLoading(true);
@@ -98,7 +100,7 @@ function Landing({ onFindComedy }: LandingProps) {
             className="w-32 h-32 mx-auto mb-4 object-contain"
           />
           <h1 className="text-4xl font-bold mb-3">Comedy Scrapper 2028</h1>
-          <p className="text-gray-400 text-lg">
+          <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
             Discover the best comedy happening tonight in any city
           </p>
         </div>
@@ -112,7 +114,11 @@ function Landing({ onFindComedy }: LandingProps) {
                 onChange={(e) => setCity(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleCitySearch()}
                 placeholder="Enter city name (e.g., New York, Chicago)"
-                className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-colors"
+                className={`flex-1 px-4 py-3 rounded-lg border focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-colors ${
+                  theme === 'dark'
+                    ? 'bg-gray-800 text-white border-gray-700'
+                    : 'bg-white text-gray-900 border-gray-300'
+                }`}
                 disabled={isLoading}
               />
               <button
@@ -128,10 +134,12 @@ function Landing({ onFindComedy }: LandingProps) {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-700"></div>
+              <div className={`w-full border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-950 text-gray-500">or</span>
+              <span className={`px-2 ${theme === 'dark' ? 'bg-gray-950 text-gray-500' : 'bg-gray-50 text-gray-500'}`}>
+                or
+              </span>
             </div>
           </div>
 
@@ -139,14 +147,22 @@ function Landing({ onFindComedy }: LandingProps) {
             <button
               onClick={handleSearchLA}
               disabled={isLoading}
-              className="w-full px-8 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full px-8 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                theme === 'dark'
+                  ? 'bg-gray-800 text-white hover:bg-gray-700'
+                  : 'bg-white text-gray-900 hover:bg-gray-100 border border-gray-300'
+              }`}
             >
               {isLoading ? 'Finding Comedy...' : 'Search Los Angeles'}
             </button>
             <button
               onClick={handleGeolocation}
               disabled={isLoading}
-              className="w-full px-8 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full px-8 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                theme === 'dark'
+                  ? 'bg-gray-800 text-white hover:bg-gray-700'
+                  : 'bg-white text-gray-900 hover:bg-gray-100 border border-gray-300'
+              }`}
             >
               {isLoading ? 'Getting Location...' : 'Use My Location'}
             </button>

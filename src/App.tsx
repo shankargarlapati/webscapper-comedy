@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import Landing from './components/Landing';
 import Results from './components/Results';
 import { ComedyEvent } from './types';
+import { useTheme } from './contexts/ThemeContext';
 
 type AppState = 'landing' | 'loading' | 'results' | 'error';
 
@@ -10,6 +12,7 @@ function App() {
   const [events, setEvents] = useState<ComedyEvent[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [searchedCity, setSearchedCity] = useState<string>('');
+  const { theme, toggleTheme } = useTheme();
 
   const handleFindComedy = async (latitude: number, longitude: number, city?: string) => {
     setState('loading');
@@ -55,8 +58,23 @@ function App() {
     setErrorMessage('');
   };
 
+  const bgClass = theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50';
+  const textClass = theme === 'dark' ? 'text-white' : 'text-gray-900';
+
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className={`min-h-screen ${bgClass} ${textClass}`}>
+      <button
+        onClick={toggleTheme}
+        className={`fixed top-6 right-6 z-50 p-3 rounded-full shadow-lg transition-colors ${
+          theme === 'dark'
+            ? 'bg-gray-800 hover:bg-gray-700 text-yellow-400'
+            : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-200'
+        }`}
+        aria-label="Toggle theme"
+      >
+        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </button>
+
       {state === 'landing' && (
         <Landing onFindComedy={handleFindComedy} />
       )}
@@ -65,7 +83,9 @@ function App() {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-            <p className="text-gray-400">Finding the best comedy for you...</p>
+            <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+              Finding the best comedy for you...
+            </p>
           </div>
         </div>
       )}
