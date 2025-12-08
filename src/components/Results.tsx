@@ -28,11 +28,18 @@ function Results({ events, onReset, city }: ResultsProps) {
     <div className="min-h-screen p-6 pb-24">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-bold mb-1">
-              Tonight's Best Comedy{city && ` in ${city}`}
-            </h2>
-            <p className="text-gray-400">Top venues by ratings in each category</p>
+          <div className="flex items-center gap-4">
+            <img
+              src="/comedyclub_logo.png"
+              alt="Comedy Scrapper 2028"
+              className="w-16 h-16 object-contain"
+            />
+            <div>
+              <h2 className="text-3xl font-bold mb-1">
+                Tonight's Best Comedy{city && ` in ${city}`}
+              </h2>
+              <p className="text-gray-400">Top venues by ratings in each category</p>
+            </div>
           </div>
           <button
             onClick={onReset}
