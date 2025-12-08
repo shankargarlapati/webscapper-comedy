@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Laugh } from 'lucide-react';
+import { Laugh, Search } from 'lucide-react';
 
 interface LandingProps {
-  onFindComedy: (latitude: number, longitude: number) => void;
+  onFindComedy: (latitude: number, longitude: number, city?: string) => void;
 }
 
 function Landing({ onFindComedy }: LandingProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [city, setCity] = useState('');
 
   const handleGeolocation = () => {
     setIsLoading(true);
@@ -34,7 +35,40 @@ function Landing({ onFindComedy }: LandingProps) {
   const handleSearchLA = () => {
     setIsLoading(true);
     setError('');
-    onFindComedy(34.0522, -118.2437);
+    onFindComedy(34.0522, -118.2437, 'Los Angeles');
+  };
+
+  const handleCitySearch = async () => {
+    if (!city.trim()) {
+      setError('Please enter a city name');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city)}&key=${import.meta.env.VITE_GOOGLE_PLACES_API_KEY}`
+      );
+
+      const data = await response.json();
+
+      if (data.status === 'OK' && data.results.length > 0) {
+        const location = data.results[0].geometry.location;
+        const cityName = data.results[0].address_components.find(
+          (component: any) => component.types.includes('locality')
+        )?.long_name || city;
+
+        onFindComedy(location.lat, location.lng, cityName);
+      } else {
+        setError('City not found. Please try a different search.');
+        setIsLoading(false);
+      }
+    } catch (err) {
+      setError('Failed to search for city. Please try again.');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -44,25 +78,58 @@ function Landing({ onFindComedy }: LandingProps) {
           <Laugh className="w-16 h-16 mx-auto mb-4 text-yellow-400" />
           <h1 className="text-4xl font-bold mb-3">Comedy Scrapper 2028</h1>
           <p className="text-gray-400 text-lg">
-            Discover the best comedy happening tonight in Los Angeles
+            Discover the best comedy happening tonight in any city
           </p>
         </div>
 
-        <div className="space-y-3">
-          <button
-            onClick={handleSearchLA}
-            disabled={isLoading}
-            className="w-full px-8 py-4 bg-yellow-400 text-gray-950 rounded-lg font-semibold text-lg hover:bg-yellow-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Finding Comedy...' : 'Search LA Comedy'}
-          </button>
-          <button
-            onClick={handleGeolocation}
-            disabled={isLoading}
-            className="w-full px-8 py-4 bg-gray-800 text-white rounded-lg font-semibold text-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Getting Location...' : 'Use My Location'}
-          </button>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleCitySearch()}
+                placeholder="Enter city name (e.g., New York, Chicago)"
+                className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-colors"
+                disabled={isLoading}
+              />
+              <button
+                onClick={handleCitySearch}
+                disabled={isLoading}
+                className="px-6 py-3 bg-yellow-400 text-gray-950 rounded-lg font-semibold hover:bg-yellow-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Search className="w-5 h-5" />
+                <span className="hidden sm:inline">Search</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-gray-950 text-gray-500">or</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <button
+              onClick={handleSearchLA}
+              disabled={isLoading}
+              className="w-full px-8 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Finding Comedy...' : 'Search Los Angeles'}
+            </button>
+            <button
+              onClick={handleGeolocation}
+              disabled={isLoading}
+              className="w-full px-8 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Getting Location...' : 'Use My Location'}
+            </button>
+          </div>
         </div>
 
         {error && (

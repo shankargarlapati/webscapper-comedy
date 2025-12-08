@@ -4,6 +4,7 @@ import { ComedyEvent, ComedyCategory } from '../types';
 interface ResultsProps {
   events: ComedyEvent[];
   onReset: () => void;
+  city?: string;
 }
 
 const CATEGORIES: ComedyCategory[] = [
@@ -13,7 +14,7 @@ const CATEGORIES: ComedyCategory[] = [
   'Improv Comedy Leaders',
 ];
 
-function Results({ events, onReset }: ResultsProps) {
+function Results({ events, onReset, city }: ResultsProps) {
   const getEventsForCategory = (category: ComedyCategory): ComedyEvent[] => {
     return events.filter((e) => e.category === category);
   };
@@ -28,7 +29,9 @@ function Results({ events, onReset }: ResultsProps) {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-bold mb-1">Tonight's Best Comedy</h2>
+            <h2 className="text-3xl font-bold mb-1">
+              Tonight's Best Comedy{city && ` in ${city}`}
+            </h2>
             <p className="text-gray-400">Top venues by ratings in each category</p>
           </div>
           <button

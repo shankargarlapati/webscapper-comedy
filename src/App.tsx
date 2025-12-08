@@ -9,10 +9,12 @@ function App() {
   const [state, setState] = useState<AppState>('landing');
   const [events, setEvents] = useState<ComedyEvent[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [searchedCity, setSearchedCity] = useState<string>('');
 
-  const handleFindComedy = async (latitude: number, longitude: number) => {
+  const handleFindComedy = async (latitude: number, longitude: number, city?: string) => {
     setState('loading');
     setErrorMessage('');
+    setSearchedCity(city || '');
 
     try {
       const response = await fetch(
@@ -69,7 +71,7 @@ function App() {
       )}
 
       {state === 'results' && (
-        <Results events={events} onReset={handleReset} />
+        <Results events={events} onReset={handleReset} city={searchedCity} />
       )}
 
       {state === 'error' && (
