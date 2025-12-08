@@ -1,4 +1,4 @@
-# Singular
+# Singularity
 
 A minimal web app that helps users instantly discover the best comedy happening tonight in Los Angeles.
 
