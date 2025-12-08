@@ -6,8 +6,6 @@ interface LandingProps {
 }
 
 function Landing({ onFindComedy }: LandingProps) {
-  const [showZipInput, setShowZipInput] = useState(false);
-  const [zipCode, setZipCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -17,7 +15,6 @@ function Landing({ onFindComedy }: LandingProps) {
 
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser');
-      setShowZipInput(true);
       setIsLoading(false);
       return;
     }
@@ -29,41 +26,9 @@ function Landing({ onFindComedy }: LandingProps) {
       },
       () => {
         setIsLoading(false);
-        setShowZipInput(true);
+        setError('Unable to get your location. Please enable location services.');
       }
     );
-  };
-
-  const handleZipSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    if (!/^\d{5}$/.test(zipCode)) {
-      setError('Please enter a valid 5-digit zip code');
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://api.zippopotam.us/us/${zipCode}`
-      );
-
-      if (!response.ok) {
-        throw new Error('Invalid zip code');
-      }
-
-      const data = await response.json();
-      const latitude = parseFloat(data.places[0].latitude);
-      const longitude = parseFloat(data.places[0].longitude);
-
-      setIsLoading(false);
-      onFindComedy(latitude, longitude);
-    } catch {
-      setError('Unable to find location for this zip code');
-      setIsLoading(false);
-    }
   };
 
   const handleSearchLA = () => {
@@ -83,63 +48,22 @@ function Landing({ onFindComedy }: LandingProps) {
           </p>
         </div>
 
-        {!showZipInput ? (
-          <div className="space-y-3">
-            <button
-              onClick={handleSearchLA}
-              disabled={isLoading}
-              className="w-full px-8 py-4 bg-yellow-400 text-gray-950 rounded-lg font-semibold text-lg hover:bg-yellow-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Finding Comedy...' : 'Search LA Comedy'}
-            </button>
-            <button
-              onClick={handleGeolocation}
-              disabled={isLoading}
-              className="w-full px-8 py-4 bg-gray-800 text-white rounded-lg font-semibold text-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Getting Location...' : 'Use My Location'}
-            </button>
-            <button
-              onClick={() => setShowZipInput(true)}
-              disabled={isLoading}
-              className="w-full px-8 py-4 bg-gray-800 text-white rounded-lg font-semibold text-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Enter Zip Code
-            </button>
-          </div>
-        ) : (
-          <div>
-            <form onSubmit={handleZipSubmit} className="space-y-4">
-              <div>
-                <input
-                  type="text"
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
-                  placeholder="Enter zip code"
-                  maxLength={5}
-                  className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 transition-colors"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full px-8 py-4 bg-yellow-400 text-gray-950 rounded-lg font-semibold text-lg hover:bg-yellow-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Finding Comedy...' : 'Find Comedy'}
-              </button>
-            </form>
-            <button
-              onClick={() => {
-                setShowZipInput(false);
-                setError('');
-                setZipCode('');
-              }}
-              className="mt-4 text-gray-400 hover:text-white transition-colors text-sm"
-            >
-              Back
-            </button>
-          </div>
-        )}
+        <div className="space-y-3">
+          <button
+            onClick={handleSearchLA}
+            disabled={isLoading}
+            className="w-full px-8 py-4 bg-yellow-400 text-gray-950 rounded-lg font-semibold text-lg hover:bg-yellow-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Finding Comedy...' : 'Search LA Comedy'}
+          </button>
+          <button
+            onClick={handleGeolocation}
+            disabled={isLoading}
+            className="w-full px-8 py-4 bg-gray-800 text-white rounded-lg font-semibold text-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Getting Location...' : 'Use My Location'}
+          </button>
+        </div>
 
         {error && (
           <p className="mt-4 text-red-400 text-sm">{error}</p>
