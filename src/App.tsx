@@ -32,11 +32,17 @@ function App() {
       }
 
       const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
       setEvents(data.events || []);
       setState('results');
     } catch (error) {
       console.error('Error finding comedy:', error);
-      setErrorMessage('Unable to find comedy events. Please try again.');
+      const message = error instanceof Error ? error.message : 'Unable to find comedy events. Please try again.';
+      setErrorMessage(message);
       setState('error');
     }
   };
