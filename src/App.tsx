@@ -27,11 +27,11 @@ function App() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch comedy events');
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch comedy events');
+      }
 
       if (data.error) {
         throw new Error(data.error);
