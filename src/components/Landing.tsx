@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Laugh, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 interface LandingProps {
   onFindComedy: (latitude: number, longitude: number, city?: string) => void;
@@ -92,7 +92,11 @@ function Landing({ onFindComedy }: LandingProps) {
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="text-center max-w-md w-full">
         <div className="mb-8">
-          <Laugh className="w-16 h-16 mx-auto mb-4 text-yellow-400" />
+          <img
+            src="/comedyclub_logo.png"
+            alt="Comedy Scrapper 2028"
+            className="w-32 h-32 mx-auto mb-4 object-contain"
+          />
           <h1 className="text-4xl font-bold mb-3">Comedy Scrapper 2028</h1>
           <p className="text-gray-400 text-lg">
             Discover the best comedy happening tonight in any city
