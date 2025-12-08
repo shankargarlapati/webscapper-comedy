@@ -48,11 +48,27 @@ function Landing({ onFindComedy }: LandingProps) {
     setError('');
 
     try {
+      const apiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY;
+
+      if (!apiKey) {
+        setError('Google API key is not configured. Please check your .env file.');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city)}&key=${import.meta.env.VITE_GOOGLE_PLACES_API_KEY}`
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city)}&key=${apiKey}`
       );
 
       const data = await response.json();
+
+      console.log('Geocoding response:', data);
+
+      if (data.status === 'REQUEST_DENIED') {
+        setError(`API Error: ${data.error_message || 'Request denied. Check API key restrictions.'}`);
+        setIsLoading(false);
+        return;
+      }
 
       if (data.status === 'OK' && data.results.length > 0) {
         const location = data.results[0].geometry.location;
@@ -62,11 +78,12 @@ function Landing({ onFindComedy }: LandingProps) {
 
         onFindComedy(location.lat, location.lng, cityName);
       } else {
-        setError('City not found. Please try a different search.');
+        setError(`City not found. Status: ${data.status}. Please try a different search.`);
         setIsLoading(false);
       }
     } catch (err) {
-      setError('Failed to search for city. Please try again.');
+      console.error('Geocoding error:', err);
+      setError(`Failed to search for city: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setIsLoading(false);
     }
   };
