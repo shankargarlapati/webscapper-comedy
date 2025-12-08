@@ -1,4 +1,4 @@
-import { MapPin, Star, ExternalLink, RefreshCw } from 'lucide-react';
+import { MapPin, Star, ExternalLink, RefreshCw, DollarSign } from 'lucide-react';
 import { ComedyEvent, ComedyCategory } from '../types';
 
 interface ResultsProps {
@@ -14,8 +14,8 @@ const CATEGORIES: ComedyCategory[] = [
 ];
 
 function Results({ events, onReset }: ResultsProps) {
-  const getEventForCategory = (category: ComedyCategory): ComedyEvent | null => {
-    return events.find((e) => e.category === category) || null;
+  const getEventsForCategory = (category: ComedyCategory): ComedyEvent[] => {
+    return events.filter((e) => e.category === category);
   };
 
   const getGoogleMapsUrl = (placeId?: string) => {
@@ -25,11 +25,11 @@ function Results({ events, onReset }: ResultsProps) {
 
   return (
     <div className="min-h-screen p-6 pb-24">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-bold mb-1">Tonight's Best Comedy</h2>
-            <p className="text-gray-400">One top pick per category</p>
+            <p className="text-gray-400">Top venues by ratings in each category</p>
           </div>
           <button
             onClick={onReset}
@@ -40,69 +40,82 @@ function Results({ events, onReset }: ResultsProps) {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-8">
           {CATEGORIES.map((category) => {
-            const event = getEventForCategory(category);
+            const categoryEvents = getEventsForCategory(category);
 
             return (
-              <div
-                key={category}
-                className="bg-gray-900 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-colors"
-              >
-                <div className="mb-4">
-                  <h3 className="text-sm font-semibold text-yellow-400 uppercase tracking-wide mb-2">
-                    {category}
-                  </h3>
-                </div>
+              <div key={category}>
+                <h3 className="text-xl font-semibold text-yellow-400 uppercase tracking-wide mb-4">
+                  {category}
+                </h3>
 
-                {event ? (
-                  <div>
-                    <h4 className="text-xl font-bold mb-2 text-white">
-                      {event.venueName}
-                    </h4>
+                {categoryEvents.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {categoryEvents.map((event, index) => (
+                      <div
+                        key={`${event.placeId}-${index}`}
+                        className="bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-700 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <h4 className="text-lg font-bold text-white flex-1">
+                            {event.venueName}
+                          </h4>
+                          {event.rating && event.rating > 0 && (
+                            <div className="flex items-center gap-1 ml-3 bg-yellow-400/10 px-2 py-1 rounded">
+                              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                              <span className="text-yellow-400 font-semibold text-sm">
+                                {event.rating.toFixed(1)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
 
-                    {event.eventTitle && (
-                      <p className="text-gray-300 mb-3">{event.eventTitle}</p>
-                    )}
+                        {event.eventTitle && (
+                          <p className="text-gray-300 mb-2 font-medium">{event.eventTitle}</p>
+                        )}
 
-                    <div className="flex items-center gap-4 mb-3 text-sm text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        <span>{event.distance.toFixed(1)} mi</span>
-                      </div>
+                        <div className="flex flex-wrap items-center gap-3 mb-3 text-sm">
+                          <div className="flex items-center gap-1 text-gray-400">
+                            <MapPin className="w-4 h-4" />
+                            <span>{event.distance.toFixed(1)} mi</span>
+                          </div>
 
-                      {event.rating && event.rating > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span>{event.rating.toFixed(1)}</span>
+                          {event.price && (
+                            <div className="flex items-center gap-1 text-green-400">
+                              <DollarSign className="w-4 h-4" />
+                              <span className="font-medium">{event.price}</span>
+                            </div>
+                          )}
+
                           {event.userRatingsTotal && (
-                            <span className="text-gray-500">
-                              ({event.userRatingsTotal})
+                            <span className="text-gray-500 text-xs">
+                              {event.userRatingsTotal} reviews
                             </span>
                           )}
                         </div>
-                      )}
-                    </div>
 
-                    <p className="text-gray-400 text-sm mb-4 italic">
-                      {event.aiReasoning}
-                    </p>
+                        <p className="text-gray-400 text-sm mb-3 italic line-clamp-2">
+                          {event.aiReasoning}
+                        </p>
 
-                    {event.placeId && (
-                      <a
-                        href={getGoogleMapsUrl(event.placeId) || '#'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-medium"
-                      >
-                        <span>View on Maps</span>
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    )}
+                        {event.placeId && (
+                          <a
+                            href={getGoogleMapsUrl(event.placeId) || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-medium"
+                          >
+                            <span>View on Maps</span>
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">No event found tonight</p>
+                  <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 text-center">
+                    <p className="text-gray-500">No events found in this category</p>
                   </div>
                 )}
               </div>

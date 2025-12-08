@@ -299,12 +299,13 @@ async function selectBestPerCategory(events: ComedyEvent[]): Promise<ComedyEvent
   for (const category of CATEGORIES) {
     const categoryEvents = categorized[category] || [];
     if (categoryEvents.length > 0) {
-      const best = categoryEvents.reduce((prev, current) => {
-        const prevScore = (prev.rating || 0) - (prev.distance * 0.1);
-        const currentScore = (current.rating || 0) - (current.distance * 0.1);
-        return currentScore > prevScore ? current : prev;
+      const sorted = categoryEvents.sort((a, b) => {
+        const scoreA = (a.rating || 0) - (a.distance * 0.1);
+        const scoreB = (b.rating || 0) - (b.distance * 0.1);
+        return scoreB - scoreA;
       });
-      results.push(best);
+
+      results.push(...sorted.slice(0, 5));
     }
   }
 
