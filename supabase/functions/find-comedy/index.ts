@@ -68,6 +68,16 @@ async function queryGooglePlaces(apiKey: string, lat: number, lng: number): Prom
 
     console.log(`Response status for "${query}": ${data.status}, results: ${data.results?.length || 0}`);
 
+    if (data.status === "REQUEST_DENIED") {
+      console.error("Google Places API REQUEST_DENIED:", data.error_message);
+      throw new Error(`Google Places API error: ${data.error_message || "Request denied - check API key and billing"}`);
+    }
+
+    if (data.status === "INVALID_REQUEST") {
+      console.error("Google Places API INVALID_REQUEST:", data.error_message);
+      throw new Error(`Google Places API error: ${data.error_message || "Invalid request"}`);
+    }
+
     if (data.results) {
       for (const place of data.results) {
         if (!seenPlaceIds.has(place.place_id)) {
@@ -351,8 +361,11 @@ Deno.serve(async (req: Request) => {
     const places = await queryGooglePlaces(googleApiKey, latitude, longitude);
 
     if (places.length === 0) {
+      console.error("No places found. Check: 1) Places API is enabled, 2) Billing is active, 3) API key has no restrictions");
       return new Response(
-        JSON.stringify({ error: "No comedy venues found in your area" }),
+        JSON.stringify({
+          error: "No comedy venues found in your area. This may be due to: Places API not enabled, billing not set up, or API key restrictions. Check browser console for details."
+        }),
         {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
