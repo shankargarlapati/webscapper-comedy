@@ -57,11 +57,16 @@ async function queryGooglePlaces(apiKey: string, lat: number, lng: number): Prom
   const allPlaces: any[] = [];
   const seenPlaceIds = new Set<string>();
 
+  console.log(`Querying Google Places API for lat: ${lat}, lng: ${lng}`);
+
   for (const query of queries) {
     const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=16093&keyword=${encodeURIComponent(query)}&key=${apiKey}`;
     
+    console.log(`Searching for: ${query}`);
     const response = await fetch(url);
     const data = await response.json();
+
+    console.log(`Response status for "${query}": ${data.status}, results: ${data.results?.length || 0}`);
 
     if (data.results) {
       for (const place of data.results) {
@@ -73,6 +78,7 @@ async function queryGooglePlaces(apiKey: string, lat: number, lng: number): Prom
     }
   }
 
+  console.log(`Total unique places found: ${allPlaces.length}`);
   return allPlaces;
 }
 
@@ -321,6 +327,12 @@ Deno.serve(async (req: Request) => {
     const googleApiKey = Deno.env.get("GOOGLE_PLACES_API_KEY");
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+
+    console.log("API Keys status:", {
+      googleApiKey: googleApiKey ? `Present (${googleApiKey.substring(0, 10)}...)` : "Missing",
+      openaiKey: openaiKey ? `Present (${openaiKey.substring(0, 15)}...)` : "Missing",
+      firecrawlKey: firecrawlKey ? `Present (${firecrawlKey.substring(0, 10)}...)` : "Missing"
+    });
 
     if (!googleApiKey || !openaiKey) {
       return new Response(
