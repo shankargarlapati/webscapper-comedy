@@ -66,6 +66,12 @@ function Landing({ onFindComedy }: LandingProps) {
     }
   };
 
+  const handleSearchLA = () => {
+    setIsLoading(true);
+    setError('');
+    onFindComedy(34.0522, -118.2437);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="text-center max-w-md w-full">
@@ -78,13 +84,29 @@ function Landing({ onFindComedy }: LandingProps) {
         </div>
 
         {!showZipInput ? (
-          <button
-            onClick={handleGeolocation}
-            disabled={isLoading}
-            className="w-full px-8 py-4 bg-yellow-400 text-gray-950 rounded-lg font-semibold text-lg hover:bg-yellow-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Getting Location...' : 'Find Comedy Tonight'}
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={handleSearchLA}
+              disabled={isLoading}
+              className="w-full px-8 py-4 bg-yellow-400 text-gray-950 rounded-lg font-semibold text-lg hover:bg-yellow-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Finding Comedy...' : 'Search LA Comedy'}
+            </button>
+            <button
+              onClick={handleGeolocation}
+              disabled={isLoading}
+              className="w-full px-8 py-4 bg-gray-800 text-white rounded-lg font-semibold text-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Getting Location...' : 'Use My Location'}
+            </button>
+            <button
+              onClick={() => setShowZipInput(true)}
+              disabled={isLoading}
+              className="w-full px-8 py-4 bg-gray-800 text-white rounded-lg font-semibold text-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Enter Zip Code
+            </button>
+          </div>
         ) : (
           <div>
             <form onSubmit={handleZipSubmit} className="space-y-4">
@@ -114,7 +136,7 @@ function Landing({ onFindComedy }: LandingProps) {
               }}
               className="mt-4 text-gray-400 hover:text-white transition-colors text-sm"
             >
-              Try location again
+              Back
             </button>
           </div>
         )}
