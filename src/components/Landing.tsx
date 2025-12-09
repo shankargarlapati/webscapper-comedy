@@ -89,7 +89,7 @@ function Landing({ onFindComedy }: LandingProps) {
             disabled={isLoading}
             className="w-full px-8 py-3 bg-yellow-400 text-gray-950 rounded-lg font-semibold hover:bg-yellow-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Finding Comedy...' : 'Search Hollywood'}
+            {isLoading ? 'Finding Comedy...' : 'Search Hollywood(LA)'}
           </button>
 
           <div className="relative">
