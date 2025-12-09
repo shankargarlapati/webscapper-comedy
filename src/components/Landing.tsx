@@ -74,10 +74,10 @@ function Landing({ onFindComedy }: LandingProps) {
         <div className="mb-8">
           <img
             src="/comedyclub_logo2.png"
-            alt="Comedy Scrapper 2028"
+            alt="Comedy Scraper 2028"
             className="w-32 h-32 mx-auto mb-4 object-contain"
           />
-          <h1 className="text-4xl font-bold mb-3">Comedy Scrapper 2028</h1>
+          <h1 className="text-4xl font-bold mb-3">Comedy Scraper 2028</h1>
           <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
             Discover the best comedy happening tonight in any city
           </p>
