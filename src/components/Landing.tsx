@@ -12,28 +12,6 @@ function Landing({ onFindComedy }: LandingProps) {
   const [city, setCity] = useState('');
   const { theme } = useTheme();
 
-  const handleGeolocation = () => {
-    setIsLoading(true);
-    setError('');
-
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
-      setIsLoading(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setIsLoading(false);
-        onFindComedy(position.coords.latitude, position.coords.longitude);
-      },
-      () => {
-        setIsLoading(false);
-        setError('Unable to get your location. Please enable location services.');
-      }
-    );
-  };
-
   const handleSearchLA = () => {
     setIsLoading(true);
     setError('');
@@ -106,6 +84,25 @@ function Landing({ onFindComedy }: LandingProps) {
         </div>
 
         <div className="space-y-4">
+          <button
+            onClick={handleSearchLA}
+            disabled={isLoading}
+            className="w-full px-8 py-3 bg-yellow-400 text-gray-950 rounded-lg font-semibold hover:bg-yellow-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Finding Comedy...' : 'Search Los Angeles'}
+          </button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className={`w-full border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className={`px-2 ${theme === 'dark' ? 'bg-gray-950 text-gray-500' : 'bg-gray-50 text-gray-500'}`}>
+                or
+              </span>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <div className="flex gap-2">
               <input
@@ -130,42 +127,6 @@ function Landing({ onFindComedy }: LandingProps) {
                 <span className="hidden sm:inline">Search</span>
               </button>
             </div>
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className={`w-full border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className={`px-2 ${theme === 'dark' ? 'bg-gray-950 text-gray-500' : 'bg-gray-50 text-gray-500'}`}>
-                or
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <button
-              onClick={handleSearchLA}
-              disabled={isLoading}
-              className={`w-full px-8 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                theme === 'dark'
-                  ? 'bg-gray-800 text-white hover:bg-gray-700'
-                  : 'bg-white text-gray-900 hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              {isLoading ? 'Finding Comedy...' : 'Search Los Angeles'}
-            </button>
-            <button
-              onClick={handleGeolocation}
-              disabled={isLoading}
-              className={`w-full px-8 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                theme === 'dark'
-                  ? 'bg-gray-800 text-white hover:bg-gray-700'
-                  : 'bg-white text-gray-900 hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              {isLoading ? 'Getting Location...' : 'Use My Location'}
-            </button>
           </div>
         </div>
 
